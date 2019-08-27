@@ -1,31 +1,48 @@
 #!/usr/bin/env bash
-main() {
-    local document="${1}"
-    local file
 
-    if [[ -z "${document}" ]]; then
-        document="${HOME}/Documents"
-    else
-        document="$(readlink -f "${1}")"
+set -eu
+
+[[ ${DEBUG:-0} -gt 0 ]] && set -x
+
+main()
+{
+    local src_path="${HOME}/Documents"
+    local dst_path="/home/acroread/Documents"
+
+    local document=""
+    local filename=""
+
+    [[ $# -ge 1 ]] && { document="$1"; shift; }
+
+    if [[ -n "${document}" ]]
+    then
+        document="$(readlink -f "$document")"
+
         if [[ -f "${document}" ]]; then
-            file="/home/acroread/Documents/$(basename "${document}")"
-            document="$(dirname "${document}")"
+            filename="${dst_path}/$(basename "${document}")"
+            src_path="$(dirname "${document}")"
         fi
     fi
 
-    docker run --rm -v "${document}:/home/acroread/Documents:rw" \
+    local serverip=$(ip -4 a show docker0 | awk -F '[ /]+' '/inet[ ]/ { print $3 }')
+
+    [[ -z $serverip ]] && exit 1
+
+    xhost +local:docker
+
+    docker run -it --rm -v "${src_path}:${dst_path}:rw" \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
 		-v /var/run/cups:/var/run/cups:ro \
 		-e uid="$(id -u)" \
 		-e gid="$(id -g)" \
 		-e DISPLAY="unix${DISPLAY}" \
-		-e CUPS_SERVER="$(ifconfig docker0 | awk '/^[ ]+inet / {print $2}')" \
-		-e FILE="${file}" \
+		-e CUPS_SERVER="${serverip}" \
+		-e FILE="${filename}" \
+		-e DEBUG="${DEBUG:-0}" \
 		--name acroread \
-		mgor/acroread >& /dev/null
+		acroread
 
 	return $?
 }
 
 main "$@"
-exit $?

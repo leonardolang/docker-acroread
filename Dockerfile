@@ -30,6 +30,6 @@ RUN wget -q http://ardownload.adobe.com/pub/adobe/reader/unix/9.x/9.5.5/enu/$PAC
     dpkg -i  /tmp/$PACKAGE; \
     rm /tmp/$PACKAGE
 
-COPY start-acroread.sh /tmp/
+COPY start-acroread.sh /
 
-ENTRYPOINT ["/tmp/start-acroread.sh"]
+ENTRYPOINT ["/start-acroread.sh"]

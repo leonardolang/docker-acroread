@@ -1,4 +1,9 @@
 #!/bin/bash
+
+set -eu
+
+[[ ${DEBUG:-0} -gt 0 ]] && set -x
+
 groupmod -g $gid acroread 2>/dev/null
 usermod -u $uid -g $gid acroread 2>/dev/null
 
@@ -41,4 +46,5 @@ if [[ -d /home/acroread/.adobe ]]; then
   chown -R acroread:acroread /home/acroread/.adobe
 fi
 
-exec su -ls "/bin/bash" -c "mkdir -p /home/acroread/.local/share; /usr/bin/acroread '$ARGS' '$FILE'" acroread
+# NOTE: do not run acroread as PID 1
+su -ls "/bin/bash" -c "mkdir -p /home/acroread/.local/share; /usr/bin/acroread '${ARGS:-}' '${FILE:-}'" acroread
